@@ -1,6 +1,7 @@
 package com.example.musicplayer
 
 import android.app.Service
+import android.content.Context
 import android.icu.text.CaseMap
 import android.icu.util.TimeUnit
 import android.media.MediaPlayer
@@ -44,7 +45,6 @@ class Player : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_player)
         var songID = intent.getIntExtra("PlayID", -1)
-
         fields.forEach { field ->
             songsTitles.add(field.name)
             songsIDs.add(field.getInt(field))
@@ -63,10 +63,40 @@ class Player : AppCompatActivity() {
         currentTime = findViewById(R.id.currTimeTV)
         endTime = findViewById(R.id.endTimeTV)
 
-        // play song
-        initializeMediaPlayer(songID)
-        mediaPlayer.start()
-        title.text = songsTitles[currentSongIndex]
+        // create service
+        if(MusicService.isRunning())
+        {
+            if(MusicService.currentSongIndex == currentSongIndex || currentSongIndex==-1)
+            {
+                if(currentSongIndex == -1)
+                    currentSongIndex = MusicService.currentSongIndex
+                mediaPlayer = MusicService._mediaPlayer
+                MusicService._handler.removeCallbacks(MusicService._runnable)
+                mediaPlayer.setOnCompletionListener { nextSong() }
+                finalTime = mediaPlayer.duration
+                startTime = mediaPlayer.currentPosition
+                initializeSeekBar()
+                endTime.text = String.format("%d:%d", finalTime/1000/60, finalTime/1000%60 )
+                currentTime.text = String.format("%d:%d", startTime/1000/60, startTime/1000%60 )
+                title.text = songsTitles[currentSongIndex]
+            }
+            else
+            {
+                Log.d("playing", "change song")
+                MusicService.stopService(this)
+                initializeMediaPlayer(songID)
+                title.text = songsTitles[currentSongIndex]
+                MusicService.startService(this, songsTitles[currentSongIndex], mediaPlayer,
+                        handler, runnable, currentSongIndex)
+            }
+        }
+        else
+        {
+            initializeMediaPlayer(songID)
+            title.text = songsTitles[currentSongIndex]
+            MusicService.startService(this, songsTitles[currentSongIndex], mediaPlayer,
+                    handler, runnable, currentSongIndex)
+        }
 
         // clickability
         seekBar.isClickable = false
@@ -140,10 +170,6 @@ class Player : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        //mediaPlayer.stop()
-        //mediaPlayer.release()
-        //handler.removeCallbacks(runnable)
-        MusicService.startService(this, "playing: "+songsTitles[currentSongIndex])
     }
     private fun nextSong()
     {
@@ -177,6 +203,7 @@ class Player : AppCompatActivity() {
         finalTime = mediaPlayer.duration
         startTime = mediaPlayer.currentPosition
         initializeSeekBar()
+        Log.d("seek bar", "initialized")
         endTime.text = String.format("%d:%d", finalTime/1000/60, finalTime/1000%60 )
         currentTime.text = String.format("%d:%d", startTime/1000/60, startTime/1000%60 )
     }
@@ -185,6 +212,8 @@ class Player : AppCompatActivity() {
         seekBar.max = finalTime
         seekBar.isClickable = false
         runnable = Runnable {
+            Log.d("mediaplayerstate", mediaPlayer.isPlaying.toString())
+            Log.d("run", mediaPlayer.currentPosition.toString())
             seekBar.progress = mediaPlayer.currentPosition
             currentTime.text = String.format("%d:%d", mediaPlayer.currentPosition/1000/60,
                     mediaPlayer.currentPosition/1000%60 )

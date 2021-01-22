@@ -12,7 +12,7 @@ import androidx.recyclerview.widget.RecyclerView
 import java.lang.reflect.Field
 
 class ListAdapter(private val mContext: Context,
-                  private val songsIDs: Array<Int>): RecyclerView.Adapter<ListAdapter.ListViewHolder>() {
+                  private val songsIDs: MutableList<Int>): RecyclerView.Adapter<ListAdapter.ListViewHolder>() {
     class ListViewHolder(view: View): RecyclerView.ViewHolder(view)
     {
         val nameTV: TextView = view.findViewById(R.id.songNameTV)

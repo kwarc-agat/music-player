@@ -4,12 +4,18 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import java.lang.reflect.Field
 
 class MainActivity : AppCompatActivity() {
-    private val songsIDs: Array<Int> = arrayOf(R.raw.song_01, R.raw.song_02, R.raw.song_03)
+    private val fields: Array<Field> = R.raw::class.java.fields
+    private val songsIDs: MutableList<Int> = mutableListOf()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        fields.forEach { field ->
+            songsIDs.add(field.getInt(field))
+        }
 
         val listRV = findViewById<RecyclerView>(R.id.listRV)
         listRV.adapter = ListAdapter(this, songsIDs)
